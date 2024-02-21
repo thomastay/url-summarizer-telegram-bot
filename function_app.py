@@ -6,7 +6,12 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from bot import telegram_bot_token, start, help_command, summarize_guess
+from summarizer.bot_handlers import (
+    telegram_bot_token,
+    start,
+    help_command,
+    summarize_guess,
+)
 
 app = func.FunctionApp()
 
