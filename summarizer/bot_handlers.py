@@ -26,7 +26,6 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 import os
-import json
 
 telegram_bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
 
@@ -95,6 +94,9 @@ def is_known_failed_domains(url):
         "instagram.com",
         "pinterest.com",
         "arxiv.org",
+        "archive.org",
+        "archive.is",
+        "archive.ph",
     ]
     result = urlparse(url)
     domain = result.netloc
