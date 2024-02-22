@@ -5,8 +5,11 @@ import os
 
 env = os.environ.get("ENV")
 
-client = OpenAI()
-summary_model = "gpt-3.5-turbo-0125"
+client = OpenAI(
+    base_url="https://mixtral-8x7b.lepton.run/api/v1/",
+    api_key=os.environ.get("LEPTON_API_TOKEN"),
+)
+summary_model = "mixtral-8x7b:lepton"
 
 
 def summarize_openai_stream(text):
