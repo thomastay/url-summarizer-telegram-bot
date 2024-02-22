@@ -25,17 +25,14 @@ def extract_title(html_str):
     return None
 
 
-def get_text(url, args):
+def get_text(url):
     downloaded = trafilatura.fetch_url(url)
     prune_xpath = ["//code", "//pre"]
-    if args.include_code:
-        prune_xpath = None
-    include_tables = args.include_tables
 
     return trafilatura.extract(
         downloaded,
         prune_xpath=prune_xpath,
-        include_tables=include_tables,
+        include_tables=False,
     )
 
 

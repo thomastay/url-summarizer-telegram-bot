@@ -1,38 +1,16 @@
-import json
 from openai import OpenAI
 
-from .prompt import (
-    summary_with_questions,
-    title_prompt,
-)
+from .prompt import bullet_point_summary
 import os
 
 env = os.environ.get("ENV")
 
 client = OpenAI()
-questions_model = "gpt-4-turbo-preview"
-if env == "development":
-    questions_model = "gpt-3.5-turbo-0125"
 summary_model = "gpt-3.5-turbo-0125"
 
 
-def questions_from_title(title):
-    system, user, params = title_prompt(title)
-    questions = completions(
-        model=questions_model,
-        system=system,
-        user=user,
-        max_tokens=params["max_tokens"],
-        temperature=params["temperature"],
-        is_json=True,
-    )
-    questions_json = json.loads(questions)
-    questions_arr = questions_json["questions"]
-    return questions_arr
-
-
-def summarize_openai(text, questions):
-    system, user, params = summary_with_questions(text, questions)
+def summarize_openai_stream(text):
+    system, user, params = bullet_point_summary(text)
     yield from completions_stream(
         model=summary_model,
         system=system,
@@ -43,8 +21,8 @@ def summarize_openai(text, questions):
     )
 
 
-def summarize_openai_sync(text, questions):
-    system, user, params = summary_with_questions(text, questions)
+def summarize_openai_sync(text):
+    system, user, params = bullet_point_summary(text)
     return completions(
         model=summary_model,
         system=system,

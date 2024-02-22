@@ -5,9 +5,7 @@ from telegram import ForceReply, Update
 from telegram.ext import ContextTypes
 from summarizer.text import get_text_and_title
 from summarizer.openai_summarizer import (
-    questions_from_title,
     summarize_openai_sync,
-    questions_model,
     summary_model,
 )
 from summarizer.database import (
@@ -173,24 +171,18 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 def summarize_and_save(url, title, text, user_id):
-    questions = questions_from_title(title)
-    print("questions", questions[:50])
-    summary = summarize_openai_sync(
-        text,
-        questions,
-    )
+    summary = summarize_openai_sync(text)
     print("summary", summary[:50])
 
     value = {
         "url": url,
         "title": title,
         "text": text,
-        "questions": json.dumps(questions),
-        "questions_model": questions_model,
         "summary_model": summary_model,
         "summary": summary,
         "user_id": user_id,
         "source": "telegram",
+        "type": "bullet_point",
     }
     create_summary(value)
     return summary
