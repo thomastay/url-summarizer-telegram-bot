@@ -7,7 +7,7 @@ env = os.environ.get("ENV")
 
 client = OpenAI(
     base_url="https://mixtral-8x7b.lepton.run/api/v1/",
-    api_key=os.environ.get("LEPTON_API_TOKEN"),
+    api_key=os.environ.get("LEPTON_API_KEY"),
 )
 summary_model = "mixtral-8x7b:lepton"
 
