@@ -39,7 +39,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     user_message = context.args[0]
-    print("Received invite code **redacted**")
+    logging.debug("Received invite code **redacted**")
     is_valid = is_valid_invite_code(user_message)
     if not is_valid:
         await update.message.reply_text(
@@ -123,12 +123,12 @@ async def summarize_url(update: Update, url: str) -> None:
         )
         return
 
-    print("Valid URL")
+    logging.debug("Valid URL")
     try:
         title, text = get_text_and_title(url)
-        print("url", url, "title", title[:50], "text", text[:50])
+        logging.debug("url", url, "title", title[:50], "text", text[:50])
     except Exception as e:
-        print("Error getting text and title", e)
+        logging.debug("Error getting text and title", e)
         await update.message.reply_text(
             f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
             disable_web_page_preview=True,
@@ -161,7 +161,7 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
         return
     user_message = update.message.text
-    print("Received user message to summarize", user_message)
+    logging.debug("Received user message to summarize", user_message)
     match = naive_url_regex.search(user_message)
     if not match:
         await update.message.reply_text(
@@ -174,7 +174,7 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 def summarize_and_save(url, title, text, user_id):
     summary = summarize_openai_sync(text)
-    print("summary", summary[:50])
+    logging.debug("summary", summary[:50])
 
     value = {
         "url": url,

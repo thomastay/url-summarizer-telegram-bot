@@ -1,4 +1,5 @@
 import trafilatura
+import logging
 from lxml import html
 
 
@@ -21,7 +22,7 @@ def extract_title(html_str):
     if title_element:
         return title_element[0].text
 
-    print("No <title> element found in the <head> element.")
+    logging.warning("No <title> element found in the <head> element.")
     return None
 
 
