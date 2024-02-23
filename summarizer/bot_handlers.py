@@ -97,6 +97,7 @@ def is_known_failed_domains(url):
         "archive.org",
         "archive.is",
         "archive.ph",
+        "bloomberg.com",  # Bloomberg has a robots blocker
     ]
     result = urlparse(url)
     domain = result.netloc
