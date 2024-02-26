@@ -137,6 +137,15 @@ async def summarize_url(update: Update, url: str) -> None:
             disable_web_page_preview=True,
         )
         return
+
+    # Hack: use character length as a proxy for token length. we want approximately 16k max tokens for a good summary.
+    if len(text) > 50_000:
+        await update.message.reply_text(
+            f"Sorry, the article from {url} is too long for me to summarize. Chunked summaries are a work in progress, please report this using /report.",
+            disable_web_page_preview=True,
+        )
+        return
+
     await update.message.reply_text(
         f"Got your article from {url}. Summarizing it now...",
         disable_web_page_preview=True,
