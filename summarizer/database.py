@@ -1,8 +1,10 @@
 import logging
 import os
 import hashlib
+import json
 from datetime import datetime
 from azure.data.tables import TableServiceClient
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from azure.core.exceptions import ResourceExistsError
 
 
@@ -17,20 +19,44 @@ def init_table_service_client(connection_string) -> TableServiceClient | None:
     if connection_string is None or connection_string == "":
         logging.warning("No connection string found. Skipping database initialization.")
         return None
-    service = TableServiceClient.from_connection_string(connection_string)
-    return service
+    return TableServiceClient.from_connection_string(connection_string)
+
+
+def init_blob_service_client(connection_string) -> BlobServiceClient | None:
+    if connection_string is None or connection_string == "":
+        logging.warning("No connection string found. Skipping database initialization.")
+        return None
+    return BlobServiceClient.from_connection_string(connection_string)
 
 
 table_service_client: TableServiceClient = init_table_service_client(
     blob_connection_string
 )
+blob_service_client: BlobServiceClient = init_blob_service_client(
+    blob_connection_string
+)
 summaries_table_client = None
 users_table_client = None
 invite_codes_table_client = None
+articles_container_client = None
 if table_service_client is not None:
     summaries_table_client = table_service_client.get_table_client("summaries")
     users_table_client = table_service_client.get_table_client("users")
     invite_codes_table_client = table_service_client.get_table_client("invitecodes")
+    articles_container_client = blob_service_client.get_container_client("articles")
+
+
+def create_article(url: str, text: str) -> None:
+    if articles_container_client is None:
+        logging.error("No articles container client found")
+        return
+    url_hashed = hash_token(url)
+    blob_client = articles_container_client.get_blob_client(url_hashed)
+    value = {
+        "url": url,
+        "title": text,
+    }
+    blob_client.upload_blob(json.dumps(value), overwrite=True)
 
 
 def create_summary(value: dict):

@@ -13,6 +13,7 @@ from summarizer.database import (
     is_valid_invite_code,
     create_user,
     is_user_authorized,
+    create_article,
 )
 from urllib.parse import urlparse
 
@@ -140,8 +141,9 @@ async def summarize_url(update: Update, url: str) -> None:
         f"Got your article from {url}. Summarizing it now...",
         disable_web_page_preview=True,
     )
-    summary = summarize_and_save(url, title, text, update.effective_user.id)
+    summary = summarize_openai_sync(text)
     await reply_chunked(update, summary)
+    save_summary(summary, url, title, text, update.effective_user.id)
 
 
 def check_authorized(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -174,8 +176,7 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await summarize_url(update, user_message)
 
 
-def summarize_and_save(url, title, text, user_id):
-    summary = summarize_openai_sync(text)
+def save_summary(summary, url, title, text, user_id):
     logging.debug("summary", summary[:50])
 
     value = {
@@ -188,5 +189,11 @@ def summarize_and_save(url, title, text, user_id):
         "source": "telegram",
         "type": "bullet_point",
     }
+    # Azure table storage has a limit of 32k characters per field
+    # Mark it as "text in blob"
+    if len(text) > 32_000:
+        value["text"] = ""
+        value["is_text_in_blob"] = True
+        create_article(url, text)
     create_summary(value)
     return summary
