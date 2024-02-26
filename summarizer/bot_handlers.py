@@ -194,18 +194,13 @@ def save_summary(summary, url, title, text, user_id):
     value = {
         "url": url,
         "title": title,
-        "text": text,
         "summary_model": summary_model,
         "summary": summary,
         "user_id": user_id,
         "source": "telegram",
         "type": "bullet_point",
+        "is_text_in_blob": True,
     }
-    # Azure table storage has a limit of 32k characters per field
-    # Mark it as "text in blob"
-    if len(text) > AZURE_TABLE_STORAGE_MAX_FIELD_SIZE:
-        value["text"] = ""
-        value["is_text_in_blob"] = True
-        create_article(url, text)
     create_summary(value)
-    return summary
+    logging.debug("Saved summary, saving article now")
+    create_article(url, text)
