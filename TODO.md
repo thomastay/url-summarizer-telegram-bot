@@ -4,3 +4,4 @@
 [ ] Hackernews front page
 [ ] Straitstimes / mothership live stream
 [ ] Improve access to medical articles
+[X] Download already completed summaries and analyze them

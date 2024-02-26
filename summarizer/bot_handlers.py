@@ -185,6 +185,9 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await summarize_url(update, user_message)
 
 
+AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
+
+
 def save_summary(summary, url, title, text, user_id):
     logging.debug("summary", summary[:50])
 
@@ -200,7 +203,7 @@ def save_summary(summary, url, title, text, user_id):
     }
     # Azure table storage has a limit of 32k characters per field
     # Mark it as "text in blob"
-    if len(text) > 32_000:
+    if len(text) > AZURE_TABLE_STORAGE_MAX_FIELD_SIZE:
         value["text"] = ""
         value["is_text_in_blob"] = True
         create_article(url, text)
