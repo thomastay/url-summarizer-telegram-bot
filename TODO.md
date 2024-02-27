@@ -5,3 +5,5 @@
 [ ] Straitstimes / mothership live stream
 [ ] Improve access to medical articles
 [X] Download already completed summaries and analyze them
+[ ] Write a good README
+[ ] Write a good blobg post
