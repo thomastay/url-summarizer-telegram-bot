@@ -45,15 +45,16 @@ def summarize_openai_sync(text: str) -> dict:
             "type": "bullet_point",
         }
         return summary_info
-    logging.info(
-        "Text is too long. Splitting into chunks and summarizing each chunk first."
-    )
+
     # Text is too long, split it into chunks
     chunks = split_text(text)
+    logging.info(
+        f"Text is too long at {len(text)} chars. Splitting into {len(chunks)} chunks and summarizing each chunk first."
+    )
     # We summarize each chunk into a paragraph summary first.
     # Then, we take all those paragraphs and turn them into a bullet point summary.
     summaries = []
-    for chunk in chunks:
+    for i, chunk in enumerate(chunks):
         system, user, params = paragraph_summary(chunk)
         para_summary = completions(
             model=summary_model,
@@ -63,6 +64,7 @@ def summarize_openai_sync(text: str) -> dict:
             temperature=params["temperature"],
             is_json=False,
         )
+        logging.debug(f"Completed summary {i+1} of {len(chunks)}")
         summaries.append(para_summary)
     print("summaries", summaries)
     # Now we have a list of paragraph summaries. We turn them into a bullet point summary.
