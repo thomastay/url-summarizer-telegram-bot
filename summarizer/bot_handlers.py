@@ -14,6 +14,7 @@ from summarizer.database import (
     create_user,
     is_user_authorized,
     create_article,
+    hash_token,
 )
 from urllib.parse import urlparse
 
@@ -192,6 +193,7 @@ AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
 def save_summary(summary, url, title, text, user_id):
     logging.debug("summary", summary[:50])
 
+    url_hashed = hash_token(url)
     value = {
         "url": url,
         "title": title,
@@ -201,6 +203,7 @@ def save_summary(summary, url, title, text, user_id):
         "source": "telegram",
         "type": "bullet_point",
         "is_text_in_blob": True,
+        "url_hashed": url_hashed,
     }
     create_summary(value)
     logging.debug("Saved summary, saving article now")
