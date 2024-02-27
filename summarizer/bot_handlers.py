@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import json
 
 from telegram import ForceReply, Update
 from telegram.ext import ContextTypes
@@ -140,21 +141,14 @@ async def summarize_url(update: Update, url: str) -> None:
         )
         return
 
-    # Hack: use character length as a proxy for token length. we want approximately 16k max tokens for a good summary.
-    if len(text) > 50_000:
-        await update.message.reply_text(
-            f"Sorry, the article from {url} is too long for me to summarize. Chunked summaries are a work in progress, please report this using /report.",
-            disable_web_page_preview=True,
-        )
-        return
-
     await update.message.reply_text(
         f"Got your article from {url}. Summarizing it now...",
         disable_web_page_preview=True,
     )
-    summary = summarize_openai_sync(text)
+    summary_info = summarize_openai_sync(text)
+    summary = summary_info["summary"]
     await reply_chunked(update, summary)
-    save_summary(summary, url, title, text, update.effective_user.id)
+    save_summary(summary_info, url, title, text, update.effective_user.id)
 
 
 def check_authorized(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -190,21 +184,24 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
 
 
-def save_summary(summary, url, title, text, user_id):
+def save_summary(summary_info, url, title, text, user_id):
+    summary = summary_info["summary"]
     logging.debug("summary", summary[:50])
 
     url_hashed = hash_token(url)
     value = {
         "url": url,
         "title": title,
-        "summary_model": summary_model,
+        "summary_model": summary_info["model"],
         "summary": summary,
         "user_id": user_id,
         "source": "telegram",
-        "type": "bullet_point",
+        "type": summary_info["type"],
         "is_text_in_blob": True,
         "url_hashed": url_hashed,
     }
+    if summary_info["type"] == "bullet_point_chunked":
+        value["paragraph_summaries"] = json.dumps(summary_info["paragraph_summaries"])
     create_summary(value)
     logging.debug("Saved summary, saving article now")
     create_article(url, text)

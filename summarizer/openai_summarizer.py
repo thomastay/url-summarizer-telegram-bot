@@ -1,6 +1,9 @@
+from typing import Tuple
 from openai import OpenAI
+import logging
 
-from .prompt import bullet_point_summary
+from .text import MAX_CHUNK_LENGTH, split_text
+from .prompt import bullet_point_summary, paragraph_summary
 import os
 
 env = os.environ.get("ENV")
@@ -24,9 +27,48 @@ def summarize_openai_stream(text):
     )
 
 
-def summarize_openai_sync(text):
-    system, user, params = bullet_point_summary(text)
-    return completions(
+def summarize_openai_sync(text: str) -> dict:
+    if len(text) <= MAX_CHUNK_LENGTH:
+        logging.info("Sending bullet point summary request to OpenAI")
+        system, user, params = bullet_point_summary(text)
+        summary = completions(
+            model=summary_model,
+            system=system,
+            user=user,
+            max_tokens=params["max_tokens"],
+            temperature=params["temperature"],
+            is_json=False,
+        )
+        summary_info = {
+            "summary": summary,
+            "model": summary_model,
+            "type": "bullet_point",
+        }
+        return summary_info
+    logging.info(
+        "Text is too long. Splitting into chunks and summarizing each chunk first."
+    )
+    # Text is too long, split it into chunks
+    chunks = split_text(text)
+    # We summarize each chunk into a paragraph summary first.
+    # Then, we take all those paragraphs and turn them into a bullet point summary.
+    summaries = []
+    for chunk in chunks:
+        system, user, params = paragraph_summary(chunk)
+        para_summary = completions(
+            model=summary_model,
+            system=system,
+            user=user,
+            max_tokens=params["max_tokens"],
+            temperature=params["temperature"],
+            is_json=False,
+        )
+        summaries.append(para_summary)
+    print("summaries", summaries)
+    # Now we have a list of paragraph summaries. We turn them into a bullet point summary.
+    logging.info("Sending bullet point summary request to OpenAI")
+    system, user, params = bullet_point_summary("\n".join(summaries))
+    summary = completions(
         model=summary_model,
         system=system,
         user=user,
@@ -34,6 +76,13 @@ def summarize_openai_sync(text):
         temperature=params["temperature"],
         is_json=False,
     )
+    summary_info = {
+        "summary": summary,
+        "model": summary_model,
+        "type": "bullet_point_chunked",
+        "paragraph_summaries": summaries,
+    }
+    return summary_info
 
 
 def completions_stream(

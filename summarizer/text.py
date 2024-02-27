@@ -1,6 +1,7 @@
 import trafilatura
 import logging
 from lxml import html
+from typing import List
 
 
 def extract_title(html_str):
@@ -47,3 +48,34 @@ def get_text_and_title(url):
         include_tables=False,
     )
     return title, text
+
+
+MAX_CHUNK_LENGTH = 8192 * 3  # 8192 tokens, approx 3 chars per token
+
+
+def split_text(text: str, max_length=MAX_CHUNK_LENGTH) -> List[str]:
+    total_length = len(text)
+    if total_length <= max_length:
+        return [text]
+
+    paragraphs = text.split("\n")
+
+    # Check if there are at least two paragraphs for splitting
+    if len(paragraphs) < 2:
+        return [text]
+
+    target_length = max_length
+    result = []
+    curr = 0
+    current_length = 0
+    for i, paragraph in enumerate(paragraphs):
+        current_length += len(paragraph)
+        if current_length >= target_length:
+            result.append("\n".join(paragraphs[curr:i]))
+            curr = i
+            current_length = 0
+
+    # Finalize the last chunk
+    if curr < len(paragraphs):
+        result.append("\n".join(paragraphs[curr:]))
+    return result
