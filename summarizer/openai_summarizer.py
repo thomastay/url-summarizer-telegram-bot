@@ -66,7 +66,6 @@ def summarize_openai_sync(text: str) -> dict:
         )
         logging.debug(f"Completed summary {i+1} of {len(chunks)}")
         summaries.append(para_summary)
-    print("summaries", summaries)
     # Now we have a list of paragraph summaries. We turn them into a bullet point summary.
     logging.info("Sending bullet point summary request to OpenAI")
     system, user, params = bullet_point_summary("\n".join(summaries))

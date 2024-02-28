@@ -132,9 +132,12 @@ async def summarize_url(update: Update, url: str) -> None:
 
     logging.debug("Valid URL")
     text = None
+    is_article_from_cache = False
     try:
         cached_article = read_article(url)
         if cached_article is not None:
+            is_article_from_cache = True
+            logging.info("Cache hit for article")
             if "text" in cached_article:
                 text = cached_article["text"]
             elif "title" in cached_article:
@@ -162,7 +165,13 @@ async def summarize_url(update: Update, url: str) -> None:
     summary_info = summarize_openai_sync(text)
     summary = summary_info["summary"]
     await reply_chunked(update, summary)
-    save_summary(summary_info, url, text, update.effective_user.id)
+    save_summary(
+        summary_info,
+        url,
+        text,
+        update.effective_user.id,
+        is_article_from_cache,
+    )
 
 
 def check_authorized(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -198,7 +207,7 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
 
 
-def save_summary(summary_info, url, text, user_id):
+def save_summary(summary_info, url, text, user_id, is_article_from_cache):
     summary = summary_info["summary"]
     logging.debug("summary", summary[:50])
 
@@ -216,5 +225,8 @@ def save_summary(summary_info, url, text, user_id):
     if summary_info["type"] == "bullet_point_chunked":
         value["paragraph_summaries"] = json.dumps(summary_info["paragraph_summaries"])
     create_summary(value)
-    logging.debug("Saved summary, saving article now")
-    create_article(url, text)
+    if is_article_from_cache:
+        logging.debug("Article was from cache, not saving it again")
+    else:
+        logging.debug("Saved summary, saving article now")
+        create_article(url, text)
