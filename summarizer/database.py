@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from azure.data.tables import TableServiceClient
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
-from azure.core.exceptions import ResourceExistsError
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 
 
 def hash_token(token: str):
@@ -54,9 +54,37 @@ def create_article(url: str, text: str) -> None:
     blob_client = articles_container_client.get_blob_client(url_hashed)
     value = {
         "url": url,
-        "title": text,
+        "text": text,
     }
     blob_client.upload_blob(json.dumps(value), overwrite=True)
+
+
+def read_article(url: str):
+    if articles_container_client is None:
+        logging.error("No articles container client found")
+        return
+    url_hashed = hash_token(url)
+
+    try:
+        # Attempt to get the blob client for the 'url_hashed' blob
+        blob_client = articles_container_client.get_blob_client(url_hashed)
+
+        # Try to download the blob's content
+        blob_content = blob_client.download_blob().readall()
+
+        # If the blob exists and content is successfully downloaded, return the content
+        entity = json.loads(blob_content)
+        return entity
+    except ResourceNotFoundError:
+        # If the blob does not exist, log the error and return None
+        logging.info(f"The blob for {url} does not exist in the 'articles' container.")
+        return None
+    except Exception as e:
+        # For any other exception, log the error and raise the exception
+        logging.error(
+            f"An error occurred while trying to access the blob for {url}: {e}"
+        )
+        raise
 
 
 def create_summary(value: dict):

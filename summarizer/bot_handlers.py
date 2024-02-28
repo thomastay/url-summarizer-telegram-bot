@@ -4,7 +4,7 @@ import json
 
 from telegram import ForceReply, Update
 from telegram.ext import ContextTypes
-from summarizer.text import get_text_and_title
+from summarizer.text import get_text
 from summarizer.openai_summarizer import (
     summarize_openai_sync,
     summary_model,
@@ -15,6 +15,7 @@ from summarizer.database import (
     create_user,
     is_user_authorized,
     create_article,
+    read_article,
     hash_token,
 )
 from urllib.parse import urlparse
@@ -130,16 +131,29 @@ async def summarize_url(update: Update, url: str) -> None:
         return
 
     logging.debug("Valid URL")
+    text = None
     try:
-        title, text = get_text_and_title(url)
-        logging.debug("url", url, "title", title[:50], "text", text[:50])
+        cached_article = read_article(url)
+        if cached_article is not None:
+            if "text" in cached_article:
+                text = cached_article["text"]
+            elif "title" in cached_article:
+                # This is a hotfix. I stored some articles with "title" as the key, so unfortunately I have to do this, unless i go and reset all the articles.
+                text = cached_article["title"]
     except Exception as e:
-        logging.debug("Error getting text and title", e)
-        await update.message.reply_text(
-            f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
-            disable_web_page_preview=True,
-        )
-        return
+        logging.error(f"Failed to get article from cache. Falling back. Err: {e}")
+
+    if text is None:
+        try:
+            text = get_text(url)
+            logging.debug("url", url, "text", text[:50])
+        except Exception as e:
+            logging.error("Error getting text and title", e)
+            await update.message.reply_text(
+                f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
+                disable_web_page_preview=True,
+            )
+            return
 
     await update.message.reply_text(
         f"Got your article from {url}. Summarizing it now...",
@@ -148,7 +162,7 @@ async def summarize_url(update: Update, url: str) -> None:
     summary_info = summarize_openai_sync(text)
     summary = summary_info["summary"]
     await reply_chunked(update, summary)
-    save_summary(summary_info, url, title, text, update.effective_user.id)
+    save_summary(summary_info, url, text, update.effective_user.id)
 
 
 def check_authorized(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -184,14 +198,13 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
 
 
-def save_summary(summary_info, url, title, text, user_id):
+def save_summary(summary_info, url, text, user_id):
     summary = summary_info["summary"]
     logging.debug("summary", summary[:50])
 
     url_hashed = hash_token(url)
     value = {
         "url": url,
-        "title": title,
         "summary_model": summary_info["model"],
         "summary": summary,
         "user_id": user_id,
