@@ -70,7 +70,9 @@ def split_text(text: str, max_length=MAX_CHUNK_LENGTH) -> List[str]:
     # We try to split as evenly as possible
     target_num_chunks = math.ceil(total_length / max_length)
     target_length = math.ceil(total_length / target_num_chunks)
-    logging.debug("Target length", target_length, "target_chunks", target_num_chunks)
+    logging.debug(
+        f"Splitting into {target_num_chunks} chunks of length {target_length}."
+    )
     result = []
     curr = 0
     current_length = 0
