@@ -154,6 +154,7 @@ async def summarize_url(update: Update, url: str) -> None:
                     f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
                     disable_web_page_preview=True,
                 )
+                return
             logging.info("Got text from network")
         except Exception as e:
             logging.error(f"Error getting text and title {e}")
