@@ -43,7 +43,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     user_message = context.args[0]
-    logging.debug("Received invite code **redacted**")
+    logging.info("Received invite code **redacted**")
     is_valid = is_valid_invite_code(user_message)
     if not is_valid:
         await update.message.reply_text(
@@ -130,7 +130,7 @@ async def summarize_url(update: Update, url: str) -> None:
         )
         return
 
-    logging.debug("Valid URL")
+    logging.info("Valid URL")
     text = None
     is_article_from_cache = False
     try:
@@ -154,9 +154,9 @@ async def summarize_url(update: Update, url: str) -> None:
                     f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
                     disable_web_page_preview=True,
                 )
-            logging.debug("url", url, "text", text[:50])
+            logging.info("Got text from network")
         except Exception as e:
-            logging.error("Error getting text and title", e)
+            logging.error(f"Error getting text and title {e}")
             await update.message.reply_text(
                 f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
                 disable_web_page_preview=True,
@@ -169,7 +169,7 @@ async def summarize_url(update: Update, url: str) -> None:
     )
     summary_info = summarize_openai_sync(text)
     summary = summary_info["summary"]
-    logging.info("Got summary", summary[:50])
+    logging.info(f"summary: {summary[:50]}")
     await reply_chunked(update, summary)
     save_summary(
         summary_info,
@@ -199,7 +199,7 @@ async def summarize_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
         return
     user_message = update.message.text
-    logging.debug("Received user message to summarize", user_message)
+    logging.info(f"Received user message to summarize: {user_message}")
     match = naive_url_regex.search(user_message)
     if not match:
         await update.message.reply_text(
@@ -215,7 +215,7 @@ AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
 
 def save_summary(summary_info, url, text, user_id, is_article_from_cache):
     summary = summary_info["summary"]
-    logging.debug("summary", summary[:50])
+    logging.info(f"summary: {summary[:50]}")
 
     url_hashed = hash_token(url)
     value = {
@@ -232,7 +232,7 @@ def save_summary(summary_info, url, text, user_id, is_article_from_cache):
         value["paragraph_summaries"] = json.dumps(summary_info["paragraph_summaries"])
     create_summary(value)
     if is_article_from_cache:
-        logging.debug("Article was from cache, not saving it again")
+        logging.info("Article was from cache, not saving it again")
     else:
-        logging.debug("Saved summary, saving article now")
+        logging.info("Saved summary, saving article now")
         create_article(url, text)
