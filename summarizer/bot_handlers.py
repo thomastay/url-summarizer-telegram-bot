@@ -149,6 +149,11 @@ async def summarize_url(update: Update, url: str) -> None:
     if text is None:
         try:
             text = get_text(url)
+            if text is None:
+                await update.message.reply_text(
+                    f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
+                    disable_web_page_preview=True,
+                )
             logging.debug("url", url, "text", text[:50])
         except Exception as e:
             logging.error("Error getting text and title", e)
@@ -164,6 +169,7 @@ async def summarize_url(update: Update, url: str) -> None:
     )
     summary_info = summarize_openai_sync(text)
     summary = summary_info["summary"]
+    logging.info("Got summary", summary[:50])
     await reply_chunked(update, summary)
     save_summary(
         summary_info,

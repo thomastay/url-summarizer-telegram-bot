@@ -1,3 +1,4 @@
+import math
 import trafilatura
 import logging
 from lxml import html
@@ -50,7 +51,9 @@ def get_text_and_title(url):
     return title, text
 
 
-MAX_CHUNK_LENGTH = 8192 * 3  # 8192 tokens, approx 3 chars per token
+APPROX_CHARS_PER_TOKEN = 4
+MAX_TOKEN_LENGTH_PER_SUMMARY = 8192
+MAX_CHUNK_LENGTH = MAX_TOKEN_LENGTH_PER_SUMMARY * APPROX_CHARS_PER_TOKEN
 
 
 def split_text(text: str, max_length=MAX_CHUNK_LENGTH) -> List[str]:
@@ -64,7 +67,10 @@ def split_text(text: str, max_length=MAX_CHUNK_LENGTH) -> List[str]:
     if len(paragraphs) < 2:
         return [text]
 
-    target_length = max_length
+    # We try to split as evenly as possible
+    target_num_chunks = math.ceil(total_length / max_length)
+    target_length = math.ceil(total_length / target_num_chunks)
+    logging.debug("Target length", target_length, "target_chunks", target_num_chunks)
     result = []
     curr = 0
     current_length = 0
