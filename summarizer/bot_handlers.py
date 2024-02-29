@@ -215,7 +215,6 @@ AZURE_TABLE_STORAGE_MAX_FIELD_SIZE = 32_000
 
 def save_summary(summary_info, url, text, user_id, is_article_from_cache):
     summary = summary_info["summary"]
-    logging.info(f"summary: {summary[:50]}")
 
     url_hashed = hash_token(url)
     value = {
