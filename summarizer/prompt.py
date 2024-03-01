@@ -4,7 +4,7 @@ def bullet_point_summary(text):
     user = f"===\n# Article\n\n{text}\n===\n{instruction}\n"
     params = {
         "temperature": 0.5,
-        "max_tokens": 200,
+        "max_tokens": 250,
     }
     return system, user, params
 
