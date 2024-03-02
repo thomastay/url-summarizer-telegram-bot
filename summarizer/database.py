@@ -140,7 +140,7 @@ def read_user(user_id: int) -> dict | None:
         result = users_table_client.get_entity(partition_key, row_key)
         return result
     except Exception as e:
-        logging.info("No such user:", e)
+        logging.info(f"No such user: {e}")
         return None
 
 
@@ -157,10 +157,9 @@ def is_valid_invite_code(invite_code: str) -> bool:
     row_key = hash_token(invite_code)
     try:
         invite_codes_table_client.get_entity(partition_key, row_key)
-        logging.debug("Read entity **redacted**")
         return True
     except Exception as e:
-        logging.debug("Could not read entity: ", e)
+        logging.error(f"Could not read entity: {e}")
         return False
 
 

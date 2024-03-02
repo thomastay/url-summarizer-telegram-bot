@@ -53,6 +53,7 @@ def summarize_openai_sync(text: str) -> dict:
     )
     # We summarize each chunk into a paragraph summary first.
     # Then, we take all those paragraphs and turn them into a bullet point summary.
+    # TODO change this to async and use Promises to execute all summaries at once
     summaries = []
     for i, chunk in enumerate(chunks):
         system, user, params = paragraph_summary(chunk)
@@ -64,7 +65,7 @@ def summarize_openai_sync(text: str) -> dict:
             temperature=params["temperature"],
             is_json=False,
         )
-        logging.debug(f"Completed summary {i+1} of {len(chunks)}")
+        logging.info(f"Completed summary {i+1} of {len(chunks)}")
         summaries.append(para_summary)
     # Now we have a list of paragraph summaries. We turn them into a bullet point summary.
     logging.info("Sending bullet point summary request to OpenAI")
