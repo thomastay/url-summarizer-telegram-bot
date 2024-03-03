@@ -12,6 +12,7 @@ from summarizer.bot_handlers import (
     help_command,
     summarize_guess,
     report_command,
+    disagree_command,
 )
 
 app = func.FunctionApp()
@@ -22,6 +23,7 @@ application = Application.builder().token(telegram_bot_token).build()
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CommandHandler("report", report_command))
+application.add_handler(CommandHandler("disagree", disagree_command))
 # on non command i.e message - echo the message on Telegram
 application.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, summarize_guess)
