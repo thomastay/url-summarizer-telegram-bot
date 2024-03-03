@@ -77,6 +77,11 @@ async def disagree_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     text, is_article_from_cache = await get_and_validate_url(update, url)
     if text is None:
         return
+
+    await update.message.reply_text(
+        f"Got your article from {url}. Thinking about it now...",
+        disable_web_page_preview=True,
+    )
     rebuttal_info = await rebuttal_openai(text)
     rebuttal = rebuttal_info["rebuttal"]
     logging.info(f"rebuttal: {rebuttal[:50]}")
