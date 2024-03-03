@@ -10,6 +10,7 @@ from summarizer.bot_handlers import (
     telegram_bot_token,
     help_command,
     report_command,
+    disagree_command,
     start,
     summarize_guess,
 )
@@ -24,6 +25,7 @@ def run_bot() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("report", report_command))
+    application.add_handler(CommandHandler("disagree", disagree_command))
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(

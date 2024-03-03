@@ -18,3 +18,14 @@ def paragraph_summary(text):
         "max_tokens": 300,
     }
     return system, user, params
+
+
+def critic_rebuttal(text):
+    system = "You are a critic who is reading an opinion piece and writing a rebuttal."
+    instruction = f"Write a rebuttal to the previous text. Write at a 9th grade level. Be creative."
+    user = f"===\n# Article\n\n{text}\n===\n{instruction}\n"
+    params = {
+        "temperature": 1.0,
+        "max_tokens": 500,
+    }
+    return system, user, params

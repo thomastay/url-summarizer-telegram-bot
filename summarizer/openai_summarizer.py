@@ -1,10 +1,11 @@
 import asyncio
+from pyexpat import model
 from aiolimiter import AsyncLimiter
 from openai import AsyncOpenAI
 import logging
 
 from .text import MAX_CHUNK_LENGTH, split_text
-from .prompt import bullet_point_summary, paragraph_summary
+from .prompt import bullet_point_summary, paragraph_summary, critic_rebuttal
 import os
 
 env = os.environ.get("ENV")
@@ -16,6 +17,25 @@ client = AsyncOpenAI(
 summary_model = "mixtral-8x7b:lepton"
 # 10 reqs per min, see https://www.lepton.ai/docs/overview/model_apis
 rate_limit = AsyncLimiter(10, 60)
+
+
+async def rebuttal_openai(text: str) -> dict:
+    logging.info("Sending rebuttal request to OpenAI")
+    system, user, params = critic_rebuttal(text)
+    rebuttal = await completions(
+        model=summary_model,
+        system=system,
+        user=user,
+        max_tokens=params["max_tokens"],
+        temperature=params["temperature"],
+        is_json=False,
+    )
+    rebuttal_info = {
+        "rebuttal": rebuttal,
+        "model": summary_model,
+        "type": "rebuttal",
+    }
+    return rebuttal_info
 
 
 async def summarize_openai(text: str) -> dict:

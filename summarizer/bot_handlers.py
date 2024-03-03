@@ -5,7 +5,7 @@ import json
 from telegram import ForceReply, Update
 from telegram.ext import ContextTypes
 from summarizer.text import get_text
-from summarizer.openai_summarizer import summarize_openai
+from summarizer.openai_summarizer import summarize_openai, rebuttal_openai
 from summarizer.database import (
     create_summary,
     is_valid_invite_code,
@@ -71,6 +71,25 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text("🕵️ Reported!")
 
 
+async def disagree_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # hack for now
+    url = context.args[0]
+    text, is_article_from_cache = await get_and_validate_url(update, url)
+    if text is None:
+        return
+    rebuttal_info = await rebuttal_openai(text)
+    rebuttal = rebuttal_info["rebuttal"]
+    logging.info(f"rebuttal: {rebuttal[:50]}")
+    await reply_chunked(update, rebuttal)
+    save_rebuttal(
+        rebuttal_info,
+        url,
+        text,
+        update.effective_user.id,
+        is_article_from_cache,
+    )
+
+
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Echo the user message."""
     await update.message.reply_text(update.message.text)
@@ -113,23 +132,23 @@ async def reply_chunked(update: Update, text: str):
         await update.message.reply_text(text[i : i + max_length])
 
 
-async def summarize_url(update: Update, url: str) -> None:
+async def get_and_validate_url(update: Update, url: str):
+    is_article_from_cache = False
     if not is_valid_url(url):
         await update.message.reply_text(
             f"I cannot parse the url {url}. Please provide a valid URL to summarize.",
             disable_web_page_preview=True,
         )
-        return
+        return None, is_article_from_cache
     if is_known_failed_domains(url):
         await update.message.reply_text(
             f"Sorry, I cannot summarize articles from {url}.",
             disable_web_page_preview=True,
         )
-        return
+        return None, is_article_from_cache
 
     logging.info("Valid URL")
     text = None
-    is_article_from_cache = False
     try:
         cached_article = read_article(url)
         if cached_article is not None:
@@ -151,7 +170,7 @@ async def summarize_url(update: Update, url: str) -> None:
                     f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
                     disable_web_page_preview=True,
                 )
-                return
+                return None, is_article_from_cache
             logging.info("Got text from network")
         except Exception as e:
             logging.error(f"Error getting text and title {e}")
@@ -159,7 +178,14 @@ async def summarize_url(update: Update, url: str) -> None:
                 f"Sorry, I couldn't fetch the article from {url}. Sometimes I am blocked from certain domains. Please report this using /report.",
                 disable_web_page_preview=True,
             )
-            return
+            return None, is_article_from_cache
+    return text, is_article_from_cache
+
+
+async def summarize_url(update: Update, url: str) -> None:
+    text, is_article_from_cache = await get_and_validate_url(update, url)
+    if text is None:
+        return
 
     await update.message.reply_text(
         f"Got your article from {url}. Summarizing it now...",
@@ -227,6 +253,30 @@ def save_summary(summary_info, url, text, user_id, is_article_from_cache):
     }
     if summary_info["type"] == "bullet_point_chunked":
         value["paragraph_summaries"] = json.dumps(summary_info["paragraph_summaries"])
+    create_summary(value)
+    if is_article_from_cache:
+        logging.info("Article was from cache, not saving it again")
+    else:
+        logging.info("Saved summary, saving article now")
+        create_article(url, text)
+
+
+def save_rebuttal(rebuttal_info, url, text, user_id, is_article_from_cache):
+    rebuttal = rebuttal_info["rebuttal"]
+
+    url_hashed = hash_token(url)
+    value = {
+        "url": url,
+        "rebuttal_model": rebuttal_info["model"],
+        "rebuttal": rebuttal,
+        "user_id": user_id,
+        "source": "telegram",
+        "type": rebuttal_info["type"],
+        "is_text_in_blob": True,
+        "url_hashed": url_hashed,
+    }
+    if rebuttal_info["type"] == "bullet_point_chunked":
+        value["paragraph_summaries"] = json.dumps(rebuttal_info["paragraph_summaries"])
     create_summary(value)
     if is_article_from_cache:
         logging.info("Article was from cache, not saving it again")
