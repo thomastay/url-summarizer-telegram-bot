@@ -22,7 +22,7 @@ def paragraph_summary(text):
 
 def critic_rebuttal(text):
     system = "You are a critic who is reading an opinion piece and writing a rebuttal."
-    instruction = f"Write a rebuttal to the previous text in a single paragraph. Write at a 9th grade level. Include as many topics as possible, make every word count. Be creative."
+    instruction = f"Write a rebuttal to the previous text in a single paragraph. Write at a 9th grade level. Include as many topics as possible, make every word count. Only state disagreements, do not qualify your points or attempt to reconcile both pros and cons. Be creative."
     user = f"===\n# Article\n\n{text}\n===\n{instruction}\n"
     params = {
         "temperature": 0.8,
