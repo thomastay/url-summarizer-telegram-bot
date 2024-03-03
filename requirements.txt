@@ -1,5 +1,7 @@
+aiolimiter==1.1.0
 annotated-types==0.6.0
 anyio==4.3.0
+asyncio==3.4.3
 azure-core==1.30.0
 azure-data-tables==12.5.0
 azure-functions==1.18.0

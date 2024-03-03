@@ -5,10 +5,7 @@ import json
 from telegram import ForceReply, Update
 from telegram.ext import ContextTypes
 from summarizer.text import get_text
-from summarizer.openai_summarizer import (
-    summarize_openai_sync,
-    summary_model,
-)
+from summarizer.openai_summarizer import summarize_openai
 from summarizer.database import (
     create_summary,
     is_valid_invite_code,
@@ -168,7 +165,7 @@ async def summarize_url(update: Update, url: str) -> None:
         f"Got your article from {url}. Summarizing it now...",
         disable_web_page_preview=True,
     )
-    summary_info = summarize_openai_sync(text)
+    summary_info = await summarize_openai(text)
     summary = summary_info["summary"]
     logging.info(f"summary: {summary[:50]}")
     await reply_chunked(update, summary)
