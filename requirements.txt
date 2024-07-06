@@ -7,7 +7,7 @@ azure-data-tables==12.5.0
 azure-functions==1.18.0
 azure-identity==1.15.0
 azure-storage-blob==12.19.0
-certifi==2024.2.2
+certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
 courlan==1.0.0
